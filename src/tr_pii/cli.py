@@ -24,8 +24,22 @@ def _parser() -> argparse.ArgumentParser:
         sub.add_argument("file", help="UTF-8 input file, or - for stdin")
         sub.add_argument("--types", help="Comma-separated type names: " + ",".join(TYPES))
         sub.add_argument("--terms-file", type=Path, help="UTF-8 custom terms, one per line")
+        if command == "scan":
+            sub.add_argument(
+                "--count", action="store_true", help="Print only the count of findings"
+            )
+            sub.add_argument(
+                "--format",
+                choices=("text", "json"),
+                default="text",
+                help="Output format for count: text (default) or json",
+            )
         if command == "mask":
             sub.add_argument("--style", choices=("tag", "stars", "partial", "hash"), default="tag")
+            sub.add_argument("-o", "--output", type=Path, help="Write masked text to file")
+            sub.add_argument(
+                "--force", action="store_true", help="Overwrite output file if it exists"
+            )
     return parser
 
 
@@ -63,10 +77,25 @@ def main(
         )
         matches = find(text, selected, custom_terms=terms)
         if args.command == "scan":
-            for match in matches:
-                output_stream.write(json.dumps(asdict(match), ensure_ascii=False) + "\n")
+            if getattr(args, "count", False):
+                fmt = getattr(args, "format", "text")
+                if fmt == "json":
+                    output_stream.write(json.dumps({"count": len(matches)}) + "\n")
+                else:
+                    output_stream.write(f"{len(matches)}\n")
+            else:
+                for match in matches:
+                    output_stream.write(json.dumps(asdict(match), ensure_ascii=False) + "\n")
         else:
-            output_stream.write(_mask_matches(text, matches, style, salt))
+            masked = _mask_matches(text, matches, style, salt)
+            output_file = getattr(args, "output", None)
+            if output_file is not None:
+                output_path = cast(Path, output_file)
+                if output_path.exists() and not getattr(args, "force", False):
+                    raise FileExistsError(f"Output file already exists: {output_path}")
+                output_path.write_text(masked, encoding="utf-8")
+            else:
+                output_stream.write(masked)
         return 3 if matches else 0
     except (OSError, UnicodeError, ValueError):
         # Do not echo filenames, input, terms, salts or malformed type strings.
