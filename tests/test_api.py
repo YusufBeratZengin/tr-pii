@@ -31,6 +31,50 @@ class DetectionTests(unittest.TestCase):
         card = grouped(fake.credit_card(seed=23))
         self.assertEqual(find("7 " + card + " 8", ["CREDIT_CARD"]), [])
 
+    def test_unlabelled_phone_vkn_and_common_non_pii_false_positives(self) -> None:
+        from tr_pii import validate_tckn, validate_vkn
+
+        # Invoice numbers (standard alphanumeric and numeric non-VKN checksum)
+        inv1 = "Fatura No: INV-2026-00042"
+        inv2 = "Fatura No: GIB2026000000042"
+        non_vkn = next(
+            f"{n:010d}" for n in range(1000000000, 1000000100) if not validate_vkn(f"{n:010d}")
+        )
+        inv3 = f"Fatura No: {non_vkn}"
+        for inv in (inv1, inv2, inv3):
+            self.assertEqual(find(inv), [])
+
+        # ISO dates
+        self.assertEqual(find("2026-10-22"), [])
+        self.assertEqual(find("Sözleşme tarihi: 2026-10-22."), [])
+
+        # Product codes
+        self.assertEqual(find("TR-1234-5678"), [])
+        self.assertEqual(find("Ürün Kodu: TR-1234-5678"), [])
+
+        # 11-digit order numbers failing TCKN checksum
+        non_tckn = next(
+            f"{n:011d}" for n in range(10000000000, 10000000100) if not validate_tckn(f"{n:011d}")
+        )
+        self.assertEqual(find(f"Sipariş No: {non_tckn}"), [])
+
+        # Labelled national phone cases (explicit context detects bare 10 digits)
+        for label in ("Tel:", "GSM:", "Telefon:", "Cep:"):
+            matches = find(f"{label} 5321234567")
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0].type, "PHONE")
+            self.assertEqual(matches[0].value, "5321234567")
+
+        # Unlabelled bare 10-digit national phone (avoids false-positive on bare digits)
+        self.assertEqual(find("5321234567", ["PHONE"]), [])
+
+        # Bare 10-digit checksum-valid VKN
+        valid_vkn = fake.vkn(seed=10)
+        vkn_matches = find(valid_vkn, ["VKN"])
+        self.assertEqual(len(vkn_matches), 1)
+        self.assertEqual(vkn_matches[0].type, "VKN")
+        self.assertEqual(vkn_matches[0].value, valid_vkn)
+
     def test_overlaps_checksum_confidence_and_longest(self) -> None:
         # A phone can also pass the one-digit VKN checksum. Context wins.
         from tr_pii import validate_vkn
