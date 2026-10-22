@@ -64,12 +64,15 @@ Hash style requires a non-empty salt and uses a length-framed salt, type and nor
 
 ```sh
 tr-pii scan input.txt
+tr-pii scan input.txt --count
+tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
+tr-pii mask input.txt --style partial -o output.txt
 tr-pii mask - --style stars < input.txt
 tr-pii mask input.txt --terms-file test-terms.txt
 ```
 
-`scan` emits one JSON object per finding, including `type`, `start`, `end`, `value` and `confidence`. Its output contains the original personal data; protect it as you would the input. `mask` writes the resulting text without adding a newline. Both commands accept a UTF-8 file or `-` for stdin, `--types` as comma-separated names, and `--terms-file` as a UTF-8 file with one custom term per line. Empty term-file lines are ignored. `python -m tr_pii` is equivalent to `tr-pii`.
+`scan` emits one JSON object per finding, including `type`, `start`, `end`, `value` and `confidence`. Use `--count` to output only the number of findings, optionally formatted as JSON (`--format json`). Its output contains the original personal data; protect it as you would the input. `mask` writes the resulting text without adding a newline; use `-o/--output FILE` to write directly to a file (refuses overwrite unless `--force` is given). Both commands accept a UTF-8 file or `-` for stdin, `--types` as comma-separated names, and `--terms-file` as a UTF-8 file with one custom term per line. Empty term-file lines are ignored. `python -m tr_pii` is equivalent to `tr-pii`.
 
 For `--style hash`, supply the salt in the `TR_PII_SALT` environment variable through your local environment or secret manager. The CLI deliberately has no salt command-line option. Do not store a real salt in examples or committed files.
 
@@ -80,6 +83,55 @@ For `--style hash`, supply the salt in the `TR_PII_SALT` environment variable th
 | `2` | Invalid arguments, unreadable/non-UTF-8 input, or missing hash salt |
 
 Exit code `3` makes `scan` usable as a CI gate. When scripting `mask`, handle `3` as successful processing with findings. File errors are generic to avoid exposing input paths or values in diagnostics.
+
+## Example output
+
+Given synthetic input in `examples/sample.txt` (using reserved `.invalid` domain and checksum-valid `fake.tckn(seed=1)`):
+
+```text
+E-posta: dummy@example.invalid
+TCKN: 29141777626
+```
+
+### Scan findings
+
+```sh
+tr-pii scan examples/sample.txt
+```
+
+Output:
+
+```json
+{"type": "EMAIL", "start": 9, "end": 30, "value": "dummy@example.invalid", "confidence": 0.99}
+{"type": "TCKN", "start": 37, "end": 48, "value": "29141777626", "confidence": 0.99}
+```
+
+Exit status: `3` (findings detected).
+
+Summary count only:
+
+```sh
+tr-pii scan examples/sample.txt --count
+# 2 (exit status: 3)
+
+tr-pii scan examples/sample.txt --count --format json
+# {"count": 2} (exit status: 3)
+```
+
+### Partial masking
+
+```sh
+tr-pii mask --style partial examples/sample.txt
+```
+
+Output:
+
+```text
+E-posta: *********************
+TCKN: *********26
+```
+
+Exit status: `3` (findings masked). When no findings are detected, both commands return exit status `0`.
 
 ## API summary
 

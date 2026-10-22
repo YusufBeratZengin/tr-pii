@@ -64,12 +64,15 @@ Hash biçimi boş olmayan bir tuz ister. Tuz, tür ve ortak biçime dönüştür
 
 ```sh
 tr-pii scan input.txt
+tr-pii scan input.txt --count
+tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
+tr-pii mask input.txt --style partial -o output.txt
 tr-pii mask - --style stars < input.txt
 tr-pii mask input.txt --terms-file test-terms.txt
 ```
 
-`scan`, her bulgu için `type`, `start`, `end`, `value` ve `confidence` alanlarını taşıyan bir JSON satırı üretir. Çıktı ham kişisel veriyi içerir; girdiyle aynı özenle korunmalıdır. `mask`, sonuna yeni satır eklemeden maskelenmiş metni yazar. İki komut da UTF-8 dosya veya standart girdi için `-`, virgülle ayrılmış `--types` ve satır başına bir özel terim içeren UTF-8 `--terms-file` alır. Terim dosyasındaki boş satırlar atlanır. `python -m tr_pii`, `tr-pii` ile aynı şekilde çalışır.
+`scan`, her bulgu için `type`, `start`, `end`, `value` ve `confidence` alanlarını taşıyan bir JSON satırı üretir. Yalnızca bulgu sayısını almak için `--count` seçeneğini, isteğe bağlı JSON biçimi için `--format json` seçeneğini kullanabilirsiniz. Çıktı ham kişisel veriyi içerir; girdiyle aynı özenle korunmalıdır. `mask`, sonuna yeni satır eklemeden maskelenmiş metni yazar; doğrudan bir dosyaya yazmak için `-o/--output DOSYA` seçeneğini kullanabilirsiniz (`--force` verilmedikçe var olan dosyaların üzerine yazılmaz). İki komut da UTF-8 dosya veya standart girdi için `-`, virgülle ayrılmış `--types` ve satır başına bir özel terim içeren UTF-8 `--terms-file` alır. Terim dosyasındaki boş satırlar atlanır. `python -m tr_pii`, `tr-pii` ile aynı şekilde çalışır.
 
 `--style hash` için tuzu yerel ortamınızdan veya sır yöneticinizden `TR_PII_SALT` ortam değişkenine verin. Tuzun komut satırı geçmişine girmemesi için ayrı bir komut satırı seçeneği yoktur. Gerçek tuzu örneklere veya commit'lenen dosyalara yazmayın.
 
@@ -80,6 +83,55 @@ tr-pii mask input.txt --terms-file test-terms.txt
 | `2` | Geçersiz seçenek, okunamayan/UTF-8 olmayan girdi veya eksik hash tuzu |
 
 `3` kodu sayesinde `scan`, CI kontrolü olarak kullanılabilir. Betiklerde `mask` için `3` kodunu, bulgu içeren başarılı işlem olarak ele alın. Dosya hataları, girdi yollarını veya değerlerini açığa çıkarmamak için genel bir mesajla bildirilir.
+
+## Örnek çıktı
+
+`examples/sample.txt` içerisindeki sentetik örnek girdi (ayrılmış `.invalid` alan adı ve geçerli sağlama toplamına sahip `fake.tckn(seed=1)` ile):
+
+```text
+E-posta: dummy@example.invalid
+TCKN: 29141777626
+```
+
+### Bulgu tarama (scan)
+
+```sh
+tr-pii scan examples/sample.txt
+```
+
+Çıktı:
+
+```json
+{"type": "EMAIL", "start": 9, "end": 30, "value": "dummy@example.invalid", "confidence": 0.99}
+{"type": "TCKN", "start": 37, "end": 48, "value": "29141777626", "confidence": 0.99}
+```
+
+Çıkış kodu: `3` (bulgular tespit edildi).
+
+Yalnızca bulgu sayısı özeti:
+
+```sh
+tr-pii scan examples/sample.txt --count
+# 2 (çıkış kodu: 3)
+
+tr-pii scan examples/sample.txt --count --format json
+# {"count": 2} (çıkış kodu: 3)
+```
+
+### Kısmi maskeleme (partial mask)
+
+```sh
+tr-pii mask --style partial examples/sample.txt
+```
+
+Çıktı:
+
+```text
+E-posta: *********************
+TCKN: *********26
+```
+
+Çıkış kodu: `3` (bulgular maskelendi). Hiçbir bulgu bulunmadığında her iki komut da çıkış kodu `0` döner.
 
 ## API özeti
 
