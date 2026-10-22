@@ -7,9 +7,7 @@ from ._shared import candidates, digits
 from .models import Match
 
 _FORMAT = re.compile(r"[0-9](?:[ -]?[0-9]){12,18}")
-_PATTERN = re.compile(
-    r"(?<![\w-])(?<![0-9] )[0-9](?:[ -]?[0-9]){12,18}(?![\w-]|[ -]?[0-9])"
-)
+_PATTERN = re.compile(r"(?<![\w-])(?<![0-9] )[0-9](?:[ -]?[0-9]){12,18}(?![\w-]|[ -]?[0-9])")
 
 
 def luhn_sum(value: str) -> int:
@@ -30,4 +28,3 @@ def validate_credit_card(value: str) -> bool:
 
 def detect(text: str) -> Iterator[Match]:
     return candidates(text, _PATTERN, validate_credit_card, "CREDIT_CARD", 0.90)
-

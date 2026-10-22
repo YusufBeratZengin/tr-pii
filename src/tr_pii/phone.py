@@ -17,8 +17,13 @@ _AREA_CODES = frozenset(
 _SEP = HSPACE + r"?[-]?" + HSPACE + "?"
 _BODY = (
     r"(?:(?:\+90|0090)" + _SEP + r"|0" + _SEP + r")?"
-    r"(?:\([2-5][0-9]{2}\)|[2-5][0-9]{2})" + _SEP
-    + r"[0-9]{3}" + _SEP + r"[0-9]{2}" + _SEP + r"[0-9]{2}"
+    r"(?:\([2-5][0-9]{2}\)|[2-5][0-9]{2})"
+    + _SEP
+    + r"[0-9]{3}"
+    + _SEP
+    + r"[0-9]{2}"
+    + _SEP
+    + r"[0-9]{2}"
 )
 _FORMAT = re.compile(_BODY)
 _PATTERN = re.compile(r"(?<![\w+()])" + _BODY + r"(?![\w)])")
@@ -41,9 +46,7 @@ def validate_phone(value: str) -> bool:
     if _FORMAT.fullmatch(value) is None:
         return False
     national = national_number(value)
-    return len(national) == 10 and (
-        national.startswith("5") or national[:3] in _AREA_CODES
-    )
+    return len(national) == 10 and (national.startswith("5") or national[:3] in _AREA_CODES)
 
 
 def detect(text: str) -> Iterator[Match]:
@@ -52,8 +55,7 @@ def detect(text: str) -> Iterator[Match]:
         compact = digits(value, " +-()\t\u00a0")
         explicit = value.startswith(("+90", "0090", "0"))
         formatted = len(value) != len(compact)
-        context = _CONTEXT.search(text[max(0, candidate.start() - 32):candidate.start()])
+        context = _CONTEXT.search(text[max(0, candidate.start() - 32) : candidate.start()])
         if validate_phone(value) and (explicit or formatted or context):
             confidence = 0.96 if explicit or context else 0.86
             yield Match("PHONE", candidate.start(), candidate.end(), value, confidence)
-

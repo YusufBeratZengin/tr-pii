@@ -15,9 +15,20 @@ from .vkn import validate_vkn
 
 __version__ = "0.1.0"
 __all__ = [
-    "TYPES", "Match", "Style", "find", "mask", "validate_credit_card",
-    "validate_custom_term", "validate_email", "validate_iban", "validate_ip",
-    "validate_phone", "validate_plate", "validate_postal_code", "validate_tckn",
-    "validate_tr_iban", "validate_vkn",
+    "TYPES",
+    "Match",
+    "Style",
+    "find",
+    "mask",
+    "validate_credit_card",
+    "validate_custom_term",
+    "validate_email",
+    "validate_iban",
+    "validate_ip",
+    "validate_phone",
+    "validate_plate",
+    "validate_postal_code",
+    "validate_tckn",
+    "validate_tr_iban",
+    "validate_vkn",
 ]
-

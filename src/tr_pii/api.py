@@ -58,14 +58,16 @@ def find(
         findings.extend(custom.detect(text, custom_terms))
     if not findings:
         return []
-    ranked = sorted(findings, key=lambda item: (-item.confidence, -(item.end - item.start),
-                                               item.start, item.type))
+    ranked = sorted(
+        findings,
+        key=lambda item: (-item.confidence, -(item.end - item.start), item.start, item.type),
+    )
     occupied = bytearray(len(text))
     accepted: list[Match] = []
     for match in ranked:
         if occupied.find(b"\x01", match.start, match.end) < 0:
             accepted.append(match)
-            occupied[match.start:match.end] = b"\x01" * (match.end - match.start)
+            occupied[match.start : match.end] = b"\x01" * (match.end - match.start)
     return sorted(accepted, key=lambda item: item.start)
 
 
@@ -98,8 +100,15 @@ def _replacement(match: Match, style: Style, salt: str | None) -> str:
         payload = "".join(f"{len(part)}:{part}" for part in parts).encode("utf-8")
         digest = hashlib.sha256(payload).hexdigest()[:16]
         return f"[{match.type}:{digest}]"
-    visible = {"TCKN": 2, "VKN": 2, "PHONE": 4, "IBAN": 4,
-               "CREDIT_CARD": 4, "POSTAL_CODE": 2, "PLATE": 2}.get(match.type)
+    visible = {
+        "TCKN": 2,
+        "VKN": 2,
+        "PHONE": 4,
+        "IBAN": 4,
+        "CREDIT_CARD": 4,
+        "POSTAL_CODE": 2,
+        "PLATE": 2,
+    }.get(match.type)
     if visible is None:
         return "*" * len(match.value)
     # Keep only the requested final digits, never a name or email fragment.
@@ -119,7 +128,7 @@ def _mask_matches(text: str, matches: list[Match], style: Style, salt: str | Non
     chunks: list[str] = []
     cursor = 0
     for match in matches:
-        chunks.extend((text[cursor:match.start], _replacement(match, style, salt)))
+        chunks.extend((text[cursor : match.start], _replacement(match, style, salt)))
         cursor = match.end
     chunks.append(text[cursor:])
     return "".join(chunks)
@@ -136,4 +145,3 @@ def mask(
     """Mask findings. Hash masking requires an explicit non-empty salt."""
     _validate_style(style, salt)
     return _mask_matches(text, find(text, types, custom_terms=custom_terms), style, salt)
-

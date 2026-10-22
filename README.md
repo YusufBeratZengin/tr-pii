@@ -40,7 +40,7 @@ from tr_pii import find, mask
 text = "Test e-posta: dummy@example.invalid"
 matches = find(text, types=["EMAIL"])
 assert matches[0].type == "EMAIL"
-assert text[matches[0].start:matches[0].end] == matches[0].value
+assert text[matches[0].start : matches[0].end] == matches[0].value
 assert mask(text) == "Test e-posta: [EMAIL]"
 assert mask(text, style="stars") == "Test e-posta: " + "*" * 21
 ```

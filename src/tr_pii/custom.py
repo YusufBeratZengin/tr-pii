@@ -53,4 +53,3 @@ def detect(text: str, terms: Iterable[str]) -> Iterator[Match]:
     for candidate in pattern.finditer(text):
         start, end = candidate.span(1)
         yield Match("CUSTOM", start, end, candidate.group(1), 1.0)
-

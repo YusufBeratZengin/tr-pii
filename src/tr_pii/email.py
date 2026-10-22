@@ -24,4 +24,3 @@ def validate_email(value: str) -> bool:
 
 def detect(text: str) -> Iterator[Match]:
     return candidates(text, _PATTERN, validate_email, "EMAIL", 0.99)
-

@@ -54,9 +54,12 @@ def main(
         salt = os.environ.get("TR_PII_SALT")
         _validate_style(style, salt)
         text = input_stream.read() if args.file == "-" else _read_utf8(Path(args.file))
-        terms = () if args.terms_file is None else tuple(
-            line.strip() for line in _read_utf8(args.terms_file).splitlines()
-            if line.strip()
+        terms = (
+            ()
+            if args.terms_file is None
+            else tuple(
+                line.strip() for line in _read_utf8(args.terms_file).splitlines() if line.strip()
+            )
         )
         matches = find(text, selected, custom_terms=terms)
         if args.command == "scan":
@@ -79,4 +82,3 @@ def run() -> None:
         if isinstance(stream, io.TextIOWrapper):
             stream.reconfigure(encoding="utf-8", newline="")
     raise SystemExit(main())
-

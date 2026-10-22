@@ -27,7 +27,7 @@ def corrupt(value: str) -> str:
 
 
 def grouped(value: str, size: int = 4) -> str:
-    return " ".join(value[i:i + size] for i in range(0, len(value), size))
+    return " ".join(value[i : i + size] for i in range(0, len(value), size))
 
 
 def foreign_iban(country: str, bban: str) -> str:
@@ -101,8 +101,7 @@ class ChecksumTests(unittest.TestCase):
         value = fake.tr_iban(seed=45)
         reordered = value[4:] + value[:4]
         expanded = "".join(
-            char if char.isdigit() else str(ord(char) - ord("A") + 10)
-            for char in reordered
+            char if char.isdigit() else str(ord(char) - ord("A") + 10) for char in reordered
         )
         self.assertEqual(int(expanded) % 97, 1)
 
@@ -153,12 +152,21 @@ class FormatTests(unittest.TestCase):
 
     def test_email(self) -> None:
         for value in (
-            "dummy@example.invalid", "test+label@sub.example.invalid", "x.y@example.invalid"
+            "dummy@example.invalid",
+            "test+label@sub.example.invalid",
+            "x.y@example.invalid",
         ):
             self.assertTrue(validate_email(value))
             self.assertEqual(len(find(value, ["EMAIL"])), 1)
-        for invalid in ("a..b@example.invalid", ".dummy@example.invalid", "x@-example.invalid",
-                        "x@example", "x@exam_ple.invalid", "x" * 65 + "@example.invalid", ""):
+        for invalid in (
+            "a..b@example.invalid",
+            ".dummy@example.invalid",
+            "x@-example.invalid",
+            "x@example",
+            "x@exam_ple.invalid",
+            "x" * 65 + "@example.invalid",
+            "",
+        ):
             self.assertFalse(validate_email(invalid))
             self.assertEqual(find(invalid, ["EMAIL"]), [])
         self.assertFalse(validate_email("örnek@example.invalid"))
@@ -175,8 +183,18 @@ class FormatTests(unittest.TestCase):
                 lowered = value.lower()
                 self.assertFalse(validate_plate(lowered))
                 self.assertEqual(find(lowered, ["PLATE"]), [])
-        for invalid in ("00 ZZ 007", "82 ZZ 007", "01 Q 0007", "01 W 0007", "01 X 0007",
-                        "01 İ 0007", "01 Z 07", "01 ZZ 07", "01 ZZZ 0007", "01 ZZZZ 07"):
+        for invalid in (
+            "00 ZZ 007",
+            "82 ZZ 007",
+            "01 Q 0007",
+            "01 W 0007",
+            "01 X 0007",
+            "01 İ 0007",
+            "01 Z 07",
+            "01 ZZ 07",
+            "01 ZZZ 0007",
+            "01 ZZZZ 07",
+        ):
             self.assertFalse(validate_plate(invalid))
             self.assertEqual(find(invalid, ["PLATE"]), [])
         self.assertEqual(find("ş01ZZ007ü", ["PLATE"]), [])
@@ -194,8 +212,16 @@ class FormatTests(unittest.TestCase):
             self.assertTrue(validate_ip(value))
             self.assertEqual([m.value for m in find(value, ["IP"])], [value])
             self.assertEqual([m.value for m in find("IP [" + value + "].", ["IP"])], [value])
-        for invalid in ("256.0.2.7", "192.00.2.7", "2001:db8:::7", "1:2:3:4:5:6:7:8:9",
-                        "::gg", "192.0.2.7/24", "fe80::1%test", ""):
+        for invalid in (
+            "256.0.2.7",
+            "192.00.2.7",
+            "2001:db8:::7",
+            "1:2:3:4:5:6:7:8:9",
+            "::gg",
+            "192.0.2.7/24",
+            "fe80::1%test",
+            "",
+        ):
             self.assertFalse(validate_ip(invalid))
         for invalid in ("256.0.2.7", "192.00.2.7", "2001:db8:::7", "::gg", "x192.0.2.7y"):
             self.assertEqual(find(invalid, ["IP"]), [])
@@ -223,4 +249,3 @@ class FormatTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

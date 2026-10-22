@@ -31,4 +31,3 @@ def candidates(
         if validator(value):
             start, end = candidate.span(group)
             yield Match(kind, start, end, value, confidence)
-

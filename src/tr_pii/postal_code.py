@@ -19,4 +19,3 @@ def validate_postal_code(value: str) -> bool:
 
 def detect(text: str) -> Iterator[Match]:
     return candidates(text, _PATTERN, validate_postal_code, "POSTAL_CODE", 0.80, "code")
-

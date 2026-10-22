@@ -29,4 +29,3 @@ def detect(text: str) -> Iterator[Match]:
         value = candidate.group().rstrip(".")
         if ":" in value and validate_ip(value):
             yield Match("IP", candidate.start(), candidate.start() + len(value), value, 0.97)
-

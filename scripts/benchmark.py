@@ -10,8 +10,11 @@ from tr_pii import fake, find, mask
 def main() -> None:
     unit = (
         "Sentetik test metni; fatura INV-2026-007; tarih 22.10.2026; "
-        "dummy@example.invalid; " + fake.tckn(seed=82) + "; "
-        + fake.tr_iban(seed=83) + "; IP 2001:db8::7.\n"
+        "dummy@example.invalid; "
+        + fake.tckn(seed=82)
+        + "; "
+        + fake.tr_iban(seed=83)
+        + "; IP 2001:db8::7.\n"
     )
     text = (unit * (1_000_000 // len(unit.encode("utf-8")) + 1)).encode("utf-8")[:1_000_000]
     payload = text.decode("utf-8", errors="ignore")
@@ -28,4 +31,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

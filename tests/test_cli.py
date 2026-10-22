@@ -34,10 +34,14 @@ class CLITests(unittest.TestCase):
     def test_mask_output_filter_and_clean_code(self) -> None:
         self.assertEqual(self.invoke(["mask", "-"], "dummy@example.invalid"), (3, "[EMAIL]", ""))
         self.assertEqual(self.invoke(["mask", "-"], "plain\n"), (0, "plain\n", ""))
-        self.assertEqual(self.invoke(["mask", "-", "--types", "TCKN"], "dummy@example.invalid"),
-                         (0, "dummy@example.invalid", ""))
-        self.assertEqual(self.invoke(["mask", "-", "--style", "stars"], "dummy@example.invalid"),
-                         (3, "*" * 21, ""))
+        self.assertEqual(
+            self.invoke(["mask", "-", "--types", "TCKN"], "dummy@example.invalid"),
+            (0, "dummy@example.invalid", ""),
+        )
+        self.assertEqual(
+            self.invoke(["mask", "-", "--style", "stars"], "dummy@example.invalid"),
+            (3, "*" * 21, ""),
+        )
 
     def test_hash_environment_salt(self) -> None:
         with patch.dict(os.environ, {"TR_PII_SALT": "public-test-salt"}):
@@ -64,9 +68,7 @@ class CLITests(unittest.TestCase):
                 (3, "[CUSTOM]\n", ""),
             )
             text.write_bytes(b"plain\r\nsecond line\r\n")
-            self.assertEqual(
-                self.invoke(["mask", str(text)]), (0, "plain\r\nsecond line\r\n", "")
-            )
+            self.assertEqual(self.invoke(["mask", str(text)]), (0, "plain\r\nsecond line\r\n", ""))
             text.write_bytes(b"\xff")
             status, output, error = self.invoke(["scan", str(text)])
             self.assertEqual(status, 2)
@@ -86,17 +88,26 @@ class CLITests(unittest.TestCase):
         self.assertNotIn("INVALID", error)
 
     def test_module_subprocess_exit_and_utf8(self) -> None:
-        result = subprocess.run([sys.executable, "-m", "tr_pii", "mask", "-"],
-                                input="İçerik: dummy@example.invalid\n", text=True,
-                                encoding="utf-8", capture_output=True, check=False)
+        result = subprocess.run(
+            [sys.executable, "-m", "tr_pii", "mask", "-"],
+            input="İçerik: dummy@example.invalid\n",
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
         self.assertEqual(result.returncode, 3, result.stderr)
         self.assertEqual(result.stdout, "İçerik: [EMAIL]\n")
-        result = subprocess.run([sys.executable, "-m", "tr_pii", "scan", "-"],
-                                input="plain", text=True, encoding="utf-8",
-                                capture_output=True, check=False)
+        result = subprocess.run(
+            [sys.executable, "-m", "tr_pii", "scan", "-"],
+            input="plain",
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -22,4 +22,3 @@ def validate_tckn(value: str) -> bool:
 
 def detect(text: str) -> Iterator[Match]:
     return candidates(text, _PATTERN, validate_tckn, "TCKN", 0.99)
-

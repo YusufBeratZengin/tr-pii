@@ -12,4 +12,3 @@ class Match:
     end: int
     value: str
     confidence: float
-

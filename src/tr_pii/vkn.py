@@ -29,4 +29,3 @@ def validate_vkn(value: str) -> bool:
 
 def detect(text: str) -> Iterator[Match]:
     return candidates(text, _PATTERN, validate_vkn, "VKN", 0.85)
-

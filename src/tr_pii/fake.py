@@ -50,4 +50,3 @@ def credit_card(*, length: int = 16, prefix: str = "999", seed: int | None = Non
     if len(set(body)) == 1:
         body = body[:-1] + str((int(body[-1]) + 1) % 10)
     return body + str(-luhn_sum(body + "0") % 10)
-
