@@ -2,7 +2,7 @@
 
 tr-pii, Türkçe metindeki kişisel verileri bilgisayarınızda bulan ve maskeleyen, çalışma zamanı bağımlılığı olmayan bir Python kütüphanesi ve komut satırı aracıdır.
 
-[![CI](https://img.shields.io/badge/CI-configured-2088FF)](.github/workflows/ci.yml)
+[![CI](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml)
 [![Lisans: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [English](README.md)
@@ -140,14 +140,14 @@ python -m pytest
 python -m ruff check .
 python -m mypy
 python -m build
-python is/benchmark.py
+python scripts/benchmark.py
 ```
 
 Geliştirme paketleri olmadan da depo içinden standart kütüphaneyle test çalıştırılabilir:
 
 ```sh
 PYTHONPATH=src python -m unittest discover -v
-PYTHONPATH=src python is/benchmark.py
+PYTHONPATH=src python scripts/benchmark.py
 ```
 
 PowerShell'de Python komutlarından önce `$env:PYTHONPATH = "src"` ayarlayın. CI, Python 3.10–3.14 üzerinde test, lint, sıkı tür denetimi ve paket derlemesi çalıştırır. Testler kontrol haneli veriyi üretir; ayrılmış e-posta/IP örnekleri kullanır. Katkı süreci için [CONTRIBUTING.md](CONTRIBUTING.md), değişiklikler için [CHANGELOG.md](CHANGELOG.md) dosyasına bakın.

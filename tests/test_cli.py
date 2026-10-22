@@ -53,18 +53,16 @@ class CLITests(unittest.TestCase):
             self.assertIn("hash salt", error)
 
     def test_files_terms_and_invalid_utf8(self) -> None:
-        # Place temporary test files in the checkout; no external data is read.
-        paths: list[Path] = []
-        for _ in range(2):
-            descriptor, filename = tempfile.mkstemp(dir=Path.cwd() / "is", suffix=".txt")
-            os.close(descriptor)
-            paths.append(Path(filename))
-        text, terms = paths
-        try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            text = temp_path / "text.txt"
+            terms = temp_path / "terms.txt"
             text.write_bytes("İZİN\n".encode())
             terms.write_text("izin\n\n", encoding="utf-8")
-            self.assertEqual(self.invoke(["mask", str(text), "--terms-file", str(terms)]),
-                             (3, "[CUSTOM]\n", ""))
+            self.assertEqual(
+                self.invoke(["mask", str(text), "--terms-file", str(terms)]),
+                (3, "[CUSTOM]\n", ""),
+            )
             text.write_bytes(b"plain\r\nsecond line\r\n")
             self.assertEqual(
                 self.invoke(["mask", str(text)]), (0, "plain\r\nsecond line\r\n", "")
@@ -77,9 +75,6 @@ class CLITests(unittest.TestCase):
             status, _, error = self.invoke(["scan", str(text.with_suffix(".missing"))])
             self.assertEqual(status, 2)
             self.assertNotIn(str(text), error)
-        finally:
-            for path in paths:
-                path.unlink()
 
     def test_invalid_options_no_input_disclosure(self) -> None:
         status, output, error = self.invoke(

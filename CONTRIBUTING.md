@@ -24,7 +24,7 @@ If development packages cannot be installed, run `python -m unittest discover -v
 - Fake checksum-valid identifiers are for tests only. They are not reserved and must not be sent to real services.
 - Every detector needs valid and invalid cases, checksum corruption where applicable, text-boundary checks and plausible false positives. Cover overlaps, Unicode offsets and CLI status changes when relevant.
 - Keep runtime code offline and free of third-party dependencies. Include type annotations and English error messages. Avoid abstractions that do not simplify the implementation.
-- Run `python is/benchmark.py` after changing candidate patterns or overlap resolution. Record the interpreter and timings. Avoid machine-specific timing assertions in unit tests.
+- Run `python scripts/benchmark.py` after changing candidate patterns or overlap resolution. Record the interpreter and timings. Avoid machine-specific timing assertions in unit tests.
 
 ## Pull requests
 

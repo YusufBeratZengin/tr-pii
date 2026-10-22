@@ -2,7 +2,7 @@
 
 tr-pii detects and masks personal data in Turkish text locally, using a Python library and CLI with no runtime dependencies.
 
-[![CI](https://img.shields.io/badge/CI-configured-2088FF)](.github/workflows/ci.yml)
+[![CI](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [Türkçe](README.tr.md)
@@ -140,14 +140,14 @@ python -m pytest
 python -m ruff check .
 python -m mypy
 python -m build
-python is/benchmark.py
+python scripts/benchmark.py
 ```
 
 Without development packages, tests also run with the standard library from a checkout:
 
 ```sh
 PYTHONPATH=src python -m unittest discover -v
-PYTHONPATH=src python is/benchmark.py
+PYTHONPATH=src python scripts/benchmark.py
 ```
 
 PowerShell: set `$env:PYTHONPATH = "src"` before running the Python commands. CI runs tests, lint, strict type checks and package builds on Python 3.10–3.14. Tests generate checksum fixtures and use reserved email/IP examples. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process and [CHANGELOG.md](CHANGELOG.md) for changes.
