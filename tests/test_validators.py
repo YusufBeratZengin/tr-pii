@@ -168,14 +168,24 @@ class FormatTests(unittest.TestCase):
         for letters, count in (("Z", 4), ("ZZ", 3), ("ZZ", 4), ("ZZZ", 2), ("ZZZ", 3)):
             for province in ("01", "81"):
                 value = province + " " + letters + " " + "0" * (count - 1) + "7"
-                for formatted in (value, value.replace(" ", ""), value.lower()):
+                compact = value.replace(" ", "")
+                for formatted in (value, compact, compact.lower()):
                     self.assertTrue(validate_plate(formatted))
                     self.assertEqual(len(find(formatted, ["PLATE"])), 1)
+                lowered = value.lower()
+                self.assertFalse(validate_plate(lowered))
+                self.assertEqual(find(lowered, ["PLATE"]), [])
         for invalid in ("00 ZZ 007", "82 ZZ 007", "01 Q 0007", "01 W 0007", "01 X 0007",
                         "01 İ 0007", "01 Z 07", "01 ZZ 07", "01 ZZZ 0007", "01 ZZZZ 07"):
             self.assertFalse(validate_plate(invalid))
             self.assertEqual(find(invalid, ["PLATE"]), [])
         self.assertEqual(find("ş01ZZ007ü", ["PLATE"]), [])
+
+    def test_plate_lowercase_spaced_is_not_plate(self) -> None:
+        for text in ("42 at 100", "34 km 120", "06 da 1234", "34 km  120", "06 Da 1234"):
+            self.assertFalse(validate_plate(text))
+            self.assertEqual(find("hız " + text + " idi", ["PLATE"]), [])
+        self.assertEqual(len(find("araç 34 ABC 123 geçti", ["PLATE"])), 1)
 
     def test_ip_addresses(self) -> None:
         # RFC documentation networks, unspecified and loopback addresses.

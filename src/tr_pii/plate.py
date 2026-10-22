@@ -18,8 +18,12 @@ _PATTERN = re.compile(r"(?<!\w)" + _BODY + r"(?!\w)")
 
 
 def validate_plate(value: str) -> bool:
-    """Validate ordinary shapes; no province-specific allocation lookup."""
-    return _FORMAT.fullmatch(value) is not None
+    """Validate ordinary shapes (lowercase only when compact); no allocation lookup."""
+    if _FORMAT.fullmatch(value) is None:
+        return False
+    # Lowercase is accepted only in compact form; spaced text like "42 at 100"
+    # is ordinary prose, so spaced plates require uppercase letters.
+    return not (re.search(HSPACE, value) and value != value.upper())
 
 
 def detect(text: str) -> Iterator[Match]:

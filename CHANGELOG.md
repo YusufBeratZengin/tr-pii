@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Plate detection no longer matches lowercase or mixed-case spaced text such as `42 at 100`; spaced plates need uppercase letters, lowercase is accepted only in compact form.
+
 ## 0.1.0 — 2026-10-22
 
 ### Added
