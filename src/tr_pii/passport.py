@@ -8,7 +8,7 @@ from .models import Match
 
 _SHAPE = re.compile(r"[A-Z][0-9]{7,8}", re.ASCII)
 _PATTERN = re.compile(
-    r"(?<!\w)(?:pasaport(?:[ \t]+(?:no|numaras[ıi]))?|passport(?:[ \t]+(?:no|number))?)"
+    r"(?<!\w)(?:pasaport|passport)(?!\w)(?:[ \t]+(?:no|numaras[ıi]|number)(?!\w))?"
     r"\.?[ \t]*[:=#]?[ \t]*(?P<serial>[A-Za-z][0-9]{7,8})(?!\w)",
     re.IGNORECASE,
 )

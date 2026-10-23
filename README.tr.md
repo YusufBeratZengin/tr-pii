@@ -15,7 +15,7 @@ tr-pii, Türkçe metindeki kişisel verileri bilgisayarınızda bulan ve maskele
 
 - **Türkiye'ye özgü doğrulama:** TCKN/VKN kontrol haneleri, sayısal TR IBAN sağlama toplamları, yerel telefon biçimleri ve bağlam gerektiren posta kodları yanlış eşleşmeleri azaltmaya yardımcı olur.
 - **Çevrimdışı çalışma:** ağ çağrısı, telemetri, indirilecek model veya çalışma zamanı bağımlılığı yoktur; bir LLM'e ya da servise göndermeden önce metni kendi bilgisayarınızda işleyin.
-- **Kütüphane ve komut satırı bir arada:** Unicode konumları, Türkçeye uygun özel terimler, altı maskeleme biçimi ve testleriniz için tekrarlanabilir sentetik veriler sunar.
+- **Kütüphane ve komut satırı bir arada:** Unicode konumları, Türkçeye uygun özel terimler, sekiz maskeleme biçimi ve testleriniz için tekrarlanabilir sentetik veriler sunar.
 
 ```python
 from tr_pii import fake, mask
@@ -56,7 +56,18 @@ assert mask(text) == "Test e-posta: [EMAIL]"
 assert mask(text, style="stars") == "Test e-posta: " + "*" * 21
 ```
 
-Varsayılan `tag` biçimi her bulguyu tür etiketiyle değiştirir. `stars`, ayraçlar dahil bulgunun bütün karakterlerini yıldızlar. `partial`, TCKN, VKN, posta kodu ve plakanın son iki rakamını; telefon, IBAN ve kartın son dört rakamını bırakır. E-posta, IP ve özel terimleri tamamen maskeler.
+Varsayılan `tag` biçimi her bulguyu tür etiketiyle değiştirir. `stars`, ayraçlar dahil bulgunun bütün karakterlerini yıldızlar. `partial`, TCKN, VKN, pasaport, MERSİS, posta kodu ve plakanın son iki rakamını; telefon, IBAN ve kartın son dört rakamını bırakır. E-posta, IP ve özel terimleri tamamen maskeler. Bu mevcut biçimlerin davranışı korunur.
+
+VKN, IBAN, pasaport ve MERSİS dahil bütün sayısal kimlik türlerinin son dört rakamını bırakmak için `last4` kullanın. Ayraçlar ve pasaport harfi dahil bulgunun diğer bütün karakterleri yıldızlanır; e-posta, IP ve özel terimler tamamen maskelenir. `placeholder`, her tür için ayrı olarak ilk görülme sırasıyla `[TÜR_N]` yer tutucuları üretir. Normalize edildiğinde aynı olan değerler bir çağrı içinde aynı yer tutucuyu alır; sonraki çağrıda numaralandırma yeniden 1'den başlar. İki biçim de Python API'sinde ve CLI'da kullanılabilir.
+
+```python
+from tr_pii import fake, mask
+
+iban = fake.tr_iban(seed=7)  # Algoritmayla üretilir; gerçek hesaptan alınmaz.
+assert mask(iban, style="stars", types=["IBAN"]) == "*" * len(iban)
+assert mask(iban, style="last4", types=["IBAN"]) == "*" * (len(iban) - 4) + iban[-4:]
+assert mask(f"{iban}; {iban}", style="placeholder", types=["IBAN"]) == "[IBAN_1]; [IBAN_1]"
+```
 
 ```python
 from tr_pii import mask
@@ -79,6 +90,8 @@ tr-pii scan input.txt --count
 tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
 tr-pii mask input.txt --style partial -o output.txt
+tr-pii mask input.txt --style last4
+tr-pii mask input.txt --style placeholder
 tr-pii mask - --style stars < input.txt
 tr-pii mask input.txt --style redact
 tr-pii mask input.txt --fake --seed 42
@@ -100,7 +113,7 @@ Ayrı bir yapılandırma dosyası yoktur. Seçenekleri API'ye veya komut satır�
 | Ayar | Python API | Komut satırı | Varsayılan |
 | --- | --- | --- | --- |
 | Etkin algılayıcılar | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | Bütün türler |
-| Maskeleme biçimi | `style="tag"` | `--style tag` | `tag`; diğerleri: `stars`, `partial`, `hash`, `redact`, `fake` |
+| Maskeleme biçimi | `style="tag"` | `--style tag` | `tag`; diğerleri: `stars`, `partial`, `hash`, `redact`, `fake`, `last4`, `placeholder` |
 | Sahte değer tohumu (seed) | `seed=42` | `--seed 42` | Her çalıştırmada rastgele (yalnız `fake` biçimi) |
 | Özel sözlük | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Boş; UTF-8 dosyada satır başına bir terim |
 | Hash tuzu | `salt=...` | `TR_PII_SALT` ortam değişkeni | Tanımsız; `hash` için zorunlu |
@@ -284,6 +297,7 @@ PowerShell'de Python komutlarından önce `$env:PYTHONPATH = "src"` ayarlayın. 
 
 ## Teknik kaynaklar
 
+- [Ticaret Bakanlığı, MERSİS numarası](https://www.ticaret.gov.tr/ic-ticaret/sikca-sorulan-sorular/ticaret-sicili): 16 haneli sicil numarasının tanımı; bu kütüphane sicil sorgusu yapmaz.
 - [TCMB IBAN tebliği](https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB%2BEN/Bottom%2BMenu/IBAN/Communique): TR yapısı ve MOD 97-10.
 - [SWIFT IBAN kaydı](https://www.swift.com/resource/iban-registry-pdf): ülke uzunlukları (Sürüm 103, Eylül 2026).
 - [BTK ulusal numaralandırma planı](https://btk.gov.tr/ulusal-numaralandirma-plani): mobil ve coğrafi numara yapıları.

@@ -15,7 +15,7 @@ tr-pii detects and masks personal data in Turkish text locally, using a Python l
 
 - **Turkey-specific validation:** TCKN/VKN check digits, numeric TR IBAN checksums, local phone formats and contextual postal codes help reduce false positives.
 - **Offline by default:** no network calls, telemetry, models to download or runtime dependencies; process text locally before sharing it with an LLM or service.
-- **One library, one CLI:** Unicode offsets, Turkish-aware custom terms and six masking styles, with reproducible synthetic fixtures for your tests.
+- **One library, one CLI:** Unicode offsets, Turkish-aware custom terms and eight masking styles, with reproducible synthetic fixtures for your tests.
 
 ```python
 from tr_pii import fake, mask
@@ -56,7 +56,18 @@ assert mask(text) == "Test e-posta: [EMAIL]"
 assert mask(text, style="stars") == "Test e-posta: " + "*" * 21
 ```
 
-The default `tag` style replaces each finding with its type. `stars` replaces every character of a finding, including separators. `partial` preserves the last two digits of TCKNs, VKNs, postal codes and plates, or four digits of phones, IBANs and cards. It fully masks email, IP and custom terms.
+The default `tag` style replaces each finding with its type. `stars` replaces every character of a finding, including separators. `partial` preserves the last two digits of TCKNs, VKNs, passports, MERSIS numbers, postal codes and plates, or four digits of phones, IBANs and cards. It fully masks email, IP and custom terms. These existing styles keep their behavior.
+
+Use `last4` to preserve the final four digits of every numeric identifier type, including VKN, IBAN, passport and MERSIS. All other characters in the finding, including separators and passport letters, become stars; email, IP and custom terms are fully masked. `placeholder` assigns `[TYPE_N]` aliases in first-seen order, separately for each type. Equal normalized values reuse the same alias within a call; numbering starts again at 1 on the next call. Both styles work through the Python API and CLI.
+
+```python
+from tr_pii import fake, mask
+
+iban = fake.tr_iban(seed=7)  # Generated fixture, never copied from an account.
+assert mask(iban, style="stars", types=["IBAN"]) == "*" * len(iban)
+assert mask(iban, style="last4", types=["IBAN"]) == "*" * (len(iban) - 4) + iban[-4:]
+assert mask(f"{iban}; {iban}", style="placeholder", types=["IBAN"]) == "[IBAN_1]; [IBAN_1]"
+```
 
 ```python
 from tr_pii import mask
@@ -79,6 +90,8 @@ tr-pii scan input.txt --count
 tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
 tr-pii mask input.txt --style partial -o output.txt
+tr-pii mask input.txt --style last4
+tr-pii mask input.txt --style placeholder
 tr-pii mask - --style stars < input.txt
 tr-pii mask input.txt --style redact
 tr-pii mask input.txt --fake --seed 42
@@ -100,7 +113,7 @@ There is no configuration file. Pass options to the API or CLI:
 | Setting | Python API | CLI | Default |
 | --- | --- | --- | --- |
 | Enabled detectors | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | All types |
-| Masking style | `style="tag"` | `--style tag` | `tag`; also `stars`, `partial`, `hash`, `redact`, `fake` |
+| Masking style | `style="tag"` | `--style tag` | `tag`; also `stars`, `partial`, `hash`, `redact`, `fake`, `last4`, `placeholder` |
 | Fake-value seed | `seed=42` | `--seed 42` | Random per run (`fake` style only) |
 | Custom dictionary | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Empty; one UTF-8 term per line |
 | Hash salt | `salt=...` | `TR_PII_SALT` environment variable | Unset; required for `hash` |
@@ -284,6 +297,7 @@ PowerShell: set `$env:PYTHONPATH = "src"` before running the Python commands. CI
 
 ## Technical references
 
+- [Ministry of Trade, MERSIS number](https://www.ticaret.gov.tr/ic-ticaret/sikca-sorulan-sorular/ticaret-sicili): definition of the 16-digit registry identifier; this library does not query the registry.
 - [TCMB IBAN communiqué](https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB%2BEN/Bottom%2BMenu/IBAN/Communique): TR structure and MOD 97-10.
 - [SWIFT IBAN registry](https://www.swift.com/resource/iban-registry-pdf): country lengths (Release 103, September 2026).
 - [BTK national numbering plan](https://btk.gov.tr/ulusal-numaralandirma-plani): mobile and geographic number structure.

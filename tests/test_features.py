@@ -75,7 +75,10 @@ class DetectorTests(unittest.TestCase):
 
 class StyleTests(unittest.TestCase):
     def test_styles_constant(self) -> None:
-        self.assertEqual(set(STYLES), {"tag", "stars", "partial", "hash", "redact", "fake"})
+        self.assertEqual(
+            set(STYLES),
+            {"tag", "stars", "partial", "hash", "redact", "fake", "last4", "placeholder"},
+        )
 
     def test_redact_hides_type(self) -> None:
         self.assertEqual(mask("dummy@example.invalid", style="redact"), "[REDACTED]")

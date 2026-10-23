@@ -7,7 +7,7 @@ from ._shared import candidates, digits, is_digits
 from .models import Match
 
 _PATTERN = re.compile(
-    r"(?<!\w)mers[iİı]s(?:[ \t]+(?:no|numaras[ıi]))?\.?[ \t]*[:=]?[ \t]*"
+    r"(?<!\w)mers[iİı]s(?!\w)(?:[ \t]+(?:no|numaras[ıi])(?!\w))?\.?[ \t]*[:=]?[ \t]*"
     r"(?P<number>[0-9](?:[ \t\-]?[0-9]){15})(?![\w])",
     re.IGNORECASE,
 )

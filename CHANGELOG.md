@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Backward-compatible `last4` masking (final four digits of numeric identifiers; fully masked email/IP/custom terms) and per-call `placeholder` aliases such as `[IBAN_1]`, reused for normalized equal values and numbered separately per type. Both styles support the API, CLI and JSON masked offsets.
+- Independent synthetic VKN digital-root and TR IBAN MOD-97 reference tests, checksum mutations, identifier shape/boundary regressions, and full/last-four/hash/placeholder checks for VKN, IBAN, passport and MERSIS. English and Turkish usage examples document the new strategies.
 - Detectors for `PASSPORT` (label-gated letter + 7-8 digits) and `MERSIS` (label-gated 16 digits) with `validate_passport` / `validate_mersis`, partial masking, and matching `fake.passport` / `fake.mersis` generators.
 - Masking styles `redact` (type-free `[REDACTED]`) and `fake` (checksum-valid synthetic stand-ins of the same type and layout; equal inputs give equal fakes). `mask(..., seed=)`, CLI `--fake` / `--seed` make output reproducible.
 - `stats()` plus CLI `scan --stats [--format json]` for per-type summaries, and `mask --format json` reporting original and masked offsets for every finding.
@@ -34,6 +36,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Passport and MERSIS labels require a word boundary, avoiding false positives on concatenated product codes such as a label immediately followed by an identifier.
 - Configuration: corrected `tool.mypy` files in `pyproject.toml` from non-existent `is/benchmark.py` to `scripts/benchmark.py`, allowing `python -m mypy` to exit 0 on clean checkouts.
 - Benchmark references: replaced dangling `is/benchmark.py` references across `pyproject.toml`, `README.md`, `README.tr.md`, and `CONTRIBUTING.md` with `scripts/benchmark.py`.
 - Test isolation: updated `tests/test_cli.py` to use `tempfile.TemporaryDirectory()` rather than relying on a gitignored directory.

@@ -24,8 +24,8 @@ from . import fake as _fake
 from ._shared import digits
 from .models import Match
 
-Style = Literal["tag", "stars", "partial", "hash", "redact", "fake"]
-STYLES = ("tag", "stars", "partial", "hash", "redact", "fake")
+Style = Literal["tag", "stars", "partial", "hash", "redact", "fake", "last4", "placeholder"]
+STYLES = ("tag", "stars", "partial", "hash", "redact", "fake", "last4", "placeholder")
 _DETECTORS: dict[str, Callable[[str], Iterator[Match]]] = {
     "TCKN": tckn.detect,
     "VKN": vkn.detect,
@@ -137,6 +137,8 @@ def _replacement(match: Match, style: Style, salt: str | None, seed: int = 0) ->
     }.get(match.type)
     if visible is None:
         return "*" * len(match.value)
+    if style == "last4":
+        visible = 4
     # Keep only the requested final digits, never a name or email fragment.
     digit_positions = [i for i, char in enumerate(match.value) if "0" <= char <= "9"]
     keep = set(digit_positions[-visible:])
@@ -158,9 +160,18 @@ def _mask_spans(
     spans: list[tuple[int, int, str]] = []
     cursor = 0
     length = 0
+    aliases: dict[tuple[str, str], str] = {}
+    counts: dict[str, int] = {}
     for match in matches:
         before = text[cursor : match.start]
-        replacement = _replacement(match, style, salt, seed)
+        if style == "placeholder":
+            key = (match.type, _canonical(match))
+            if key not in aliases:
+                counts[match.type] = counts.get(match.type, 0) + 1
+                aliases[key] = f"[{match.type}_{counts[match.type]}]"
+            replacement = aliases[key]
+        else:
+            replacement = _replacement(match, style, salt, seed)
         chunks.extend((before, replacement))
         length += len(before)
         spans.append((length, length + len(replacement), replacement))
@@ -202,6 +213,11 @@ def mask(
     ``style="fake"`` swaps each finding for a synthetic value of the same type; the same
     input value always maps to the same fake. Pass ``seed`` for reproducible output
     (a random seed is drawn per call when omitted).
+
+    ``last4`` keeps the last four digits of numeric identifier types; email, IP
+    and custom terms are fully masked. ``partial`` retains its legacy rules.
+    ``placeholder`` assigns per-type aliases such as ``[IBAN_1]`` in first-seen
+    order, reusing aliases for normalized equal values within this call only.
     """
     _validate_style(style, salt)
     if seed is None:
