@@ -15,7 +15,7 @@ tr-pii detects and masks personal data in Turkish text locally, using a Python l
 
 - **Turkey-specific validation:** TCKN/VKN check digits, numeric TR IBAN checksums, local phone formats and contextual postal codes help reduce false positives.
 - **Offline by default:** no network calls, telemetry, models to download or runtime dependencies; process text locally before sharing it with an LLM or service.
-- **One library, one CLI:** Unicode offsets, Turkish-aware custom terms and four masking styles, with reproducible synthetic fixtures for your tests.
+- **One library, one CLI:** Unicode offsets, Turkish-aware custom terms and six masking styles, with reproducible synthetic fixtures for your tests.
 
 ```python
 from tr_pii import fake, mask
@@ -80,8 +80,14 @@ tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
 tr-pii mask input.txt --style partial -o output.txt
 tr-pii mask - --style stars < input.txt
+tr-pii mask input.txt --style redact
+tr-pii mask input.txt --fake --seed 42
+tr-pii mask input.txt --format json
+tr-pii scan input.txt --stats --format json
 tr-pii mask input.txt --terms-file test-terms.txt
 ```
+
+`--style redact` writes a type-free `[REDACTED]`. `--fake` (same as `--style fake`) swaps every finding for a synthetic value of the same type and layout (checksum-valid TCKN/VKN/IBAN/card, `192.0.2.x` IPs, `@example.invalid` emails); equal inputs get equal fakes, and `--seed N` makes the whole output reproducible (a random seed is used otherwise). `mask --format json` prints `{"text": ..., "findings": [...]}` where each finding has `start`/`end` in the original text plus `masked_start`/`masked_end` in the masked text. `scan --stats` prints a summary (`total`, per-type counts; `--format json` for `{"total", "by_type", "characters"}`) instead of the findings.
 
 `scan` emits one JSON object per finding, including `type`, `start`, `end`, `value` and `confidence`. Use `--count` to output only the number of findings, optionally formatted as JSON (`--format json`). Its output contains the original personal data; protect it as you would the input. `mask` writes the resulting text without adding a newline; use `-o/--output FILE` to write directly to a file (refuses overwrite unless `--force` is given). Both commands accept a UTF-8 file or `-` for stdin, `--types` as comma-separated names, and `--terms-file` as a UTF-8 file with one custom term per line. Empty term-file lines are ignored. `python -m tr_pii` is equivalent to `tr-pii`.
 
@@ -94,7 +100,8 @@ There is no configuration file. Pass options to the API or CLI:
 | Setting | Python API | CLI | Default |
 | --- | --- | --- | --- |
 | Enabled detectors | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | All types |
-| Masking style | `style="tag"` | `--style tag` | `tag`; also `stars`, `partial`, `hash` |
+| Masking style | `style="tag"` | `--style tag` | `tag`; also `stars`, `partial`, `hash`, `redact`, `fake` |
+| Fake-value seed | `seed=42` | `--seed 42` | Random per run (`fake` style only) |
 | Custom dictionary | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Empty; one UTF-8 term per line |
 | Hash salt | `salt=...` | `TR_PII_SALT` environment variable | Unset; required for `hash` |
 | Output destination | Return value | `-o output.txt` (`mask`) | Standard output; `--force` permits overwrite |
@@ -172,7 +179,8 @@ Exit status: `3` (findings masked). When no findings are detected, both commands
 
 ```python
 find(text, types=None, *, custom_terms=()) -> list[Match]
-mask(text, style="tag", types=None, salt=None, *, custom_terms=()) -> str
+mask(text, style="tag", types=None, salt=None, *, custom_terms=(), seed=None) -> str
+stats(matches) -> {"total": int, "by_type": dict[str, int], "characters": int}
 ```
 
 `Match` is an immutable dataclass: `type: str`, `start: int`, `end: int`, `value: str`, `confidence: float`. Offsets index the original Python string in Unicode code points; `end` is exclusive. Results are ordered by `start` and do not overlap. For overlapping candidates, higher confidence wins, then longer length, earlier start and alphabetical type. Confidence is a fixed heuristic ranking, not a calibrated probability.
@@ -190,6 +198,8 @@ mask(text, style="tag", types=None, salt=None, *, custom_terms=()) -> str
 | `PLATE` | Provinces `01`–`81`; 1 letter + 4 digits, 2 letters + 3–4 digits, or 3 letters + 2–3 digits; compact/spaced. `validate_plate` |
 | `IP` | IPv4/IPv6 checked by `ipaddress`; no label needed. `validate_ip` |
 | `POSTAL_CODE` | Five digits with province `01`–`81`, only after `posta kodu` or `PK`. `validate_postal_code` |
+| `PASSPORT` | One uppercase letter + 7–8 digits, only after `pasaport` / `passport` (optionally `no`/`number`); no public checksum. `validate_passport` |
+| `MERSIS` | 16 digits (spaces/hyphens allowed), only after `MERSIS`; no public checksum. `validate_mersis` |
 | `CUSTOM` | Explicit user terms only. `validate_custom_term(value, term)` |
 
 Validators are exported from `tr_pii` and their respective detector modules (`tckn`, `vkn`, `iban`, `phone`, `email`, `credit_card`, `plate`, `ip`, `postal_code`, `custom`). They return `bool`; phone/postal validators check a standalone value without requiring the detection context. `validate_iban` additionally checks general IBAN format, registered country length and checksum; non-TR BBAN rules are not checked. **Automatic IBAN detection covers TR only.** `TYPES`, `Match` and the `Style` type alias are public. Type information ships with `py.typed`.
@@ -197,12 +207,27 @@ Validators are exported from `tr_pii` and their respective detector modules (`tc
 ## Synthetic test data
 
 ```python
-from tr_pii import fake, validate_tckn, validate_vkn, validate_tr_iban, validate_credit_card
+from tr_pii import (
+    fake,
+    validate_credit_card,
+    validate_mersis,
+    validate_passport,
+    validate_tckn,
+    validate_tr_iban,
+    validate_vkn,
+)
 
 assert validate_tckn(fake.tckn(seed=1))
 assert validate_vkn(fake.vkn(seed=1))
 assert validate_tr_iban(fake.tr_iban(seed=1))
 assert validate_credit_card(fake.credit_card(seed=1, length=19))
+assert validate_passport(fake.passport(seed=1))
+assert validate_mersis(fake.mersis(seed=1))
+
+# Replace real-looking values with consistent synthetic ones, reproducibly.
+from tr_pii import mask
+
+safe = mask(f"TCKN {fake.tckn(seed=1)}", style="fake", seed=42)
 ```
 
 **For tests only.** These generators produce valid check digits, not registered identities or usable payment credentials. Generated values are not reserved and can accidentally coincide with assigned identifiers. Fake TR IBANs use a `00000` demo bank field; cards default to prefix `999`. Seeds make fixtures reproducible. Do not submit generated values to real services.

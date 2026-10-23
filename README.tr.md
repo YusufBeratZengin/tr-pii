@@ -15,7 +15,7 @@ tr-pii, Türkçe metindeki kişisel verileri bilgisayarınızda bulan ve maskele
 
 - **Türkiye'ye özgü doğrulama:** TCKN/VKN kontrol haneleri, sayısal TR IBAN sağlama toplamları, yerel telefon biçimleri ve bağlam gerektiren posta kodları yanlış eşleşmeleri azaltmaya yardımcı olur.
 - **Çevrimdışı çalışma:** ağ çağrısı, telemetri, indirilecek model veya çalışma zamanı bağımlılığı yoktur; bir LLM'e ya da servise göndermeden önce metni kendi bilgisayarınızda işleyin.
-- **Kütüphane ve komut satırı bir arada:** Unicode konumları, Türkçeye uygun özel terimler, dört maskeleme biçimi ve testleriniz için tekrarlanabilir sentetik veriler sunar.
+- **Kütüphane ve komut satırı bir arada:** Unicode konumları, Türkçeye uygun özel terimler, altı maskeleme biçimi ve testleriniz için tekrarlanabilir sentetik veriler sunar.
 
 ```python
 from tr_pii import fake, mask
@@ -80,8 +80,14 @@ tr-pii scan input.txt --count --format json
 tr-pii mask input.txt --style tag --types TCKN,VKN,IBAN,PHONE,EMAIL
 tr-pii mask input.txt --style partial -o output.txt
 tr-pii mask - --style stars < input.txt
+tr-pii mask input.txt --style redact
+tr-pii mask input.txt --fake --seed 42
+tr-pii mask input.txt --format json
+tr-pii scan input.txt --stats --format json
 tr-pii mask input.txt --terms-file test-terms.txt
 ```
+
+`--style redact` türü göstermeden `[REDACTED]` yazar. `--fake` (`--style fake` ile aynı) her bulguyu aynı türde ve aynı düzende sentetik bir değerle değiştirir (kontrol hanesi geçerli TCKN/VKN/IBAN/kart, `192.0.2.x` IP'leri, `@example.invalid` e-postaları); aynı girdi hep aynı sahte değeri alır, `--seed N` bütün çıktıyı tekrarlanabilir kılar (verilmezse her çalıştırmada rastgele). `mask --format json`, `{"text": ..., "findings": [...]}` yazar; her bulguda özgün metindeki `start`/`end` ile maskeli metindeki `masked_start`/`masked_end` bulunur. `scan --stats` bulguları değil özeti yazar (`total`, tür başına sayılar; `--format json` ile `{"total", "by_type", "characters"}`).
 
 `scan`, her bulgu için `type`, `start`, `end`, `value` ve `confidence` alanlarını taşıyan bir JSON satırı üretir. Yalnızca bulgu sayısını almak için `--count` seçeneğini, isteğe bağlı JSON biçimi için `--format json` seçeneğini kullanabilirsiniz. Çıktı ham kişisel veriyi içerir; girdiyle aynı özenle korunmalıdır. `mask`, sonuna yeni satır eklemeden maskelenmiş metni yazar; doğrudan bir dosyaya yazmak için `-o/--output DOSYA` seçeneğini kullanabilirsiniz (`--force` verilmedikçe var olan dosyaların üzerine yazılmaz). İki komut da UTF-8 dosya veya standart girdi için `-`, virgülle ayrılmış `--types` ve satır başına bir özel terim içeren UTF-8 `--terms-file` alır. Terim dosyasındaki boş satırlar atlanır. `python -m tr_pii`, `tr-pii` ile aynı şekilde çalışır.
 
@@ -94,7 +100,8 @@ Ayrı bir yapılandırma dosyası yoktur. Seçenekleri API'ye veya komut satır�
 | Ayar | Python API | Komut satırı | Varsayılan |
 | --- | --- | --- | --- |
 | Etkin algılayıcılar | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | Bütün türler |
-| Maskeleme biçimi | `style="tag"` | `--style tag` | `tag`; diğerleri: `stars`, `partial`, `hash` |
+| Maskeleme biçimi | `style="tag"` | `--style tag` | `tag`; diğerleri: `stars`, `partial`, `hash`, `redact`, `fake` |
+| Sahte değer tohumu (seed) | `seed=42` | `--seed 42` | Her çalıştırmada rastgele (yalnız `fake` biçimi) |
 | Özel sözlük | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Boş; UTF-8 dosyada satır başına bir terim |
 | Hash tuzu | `salt=...` | `TR_PII_SALT` ortam değişkeni | Tanımsız; `hash` için zorunlu |
 | Çıktı hedefi | Dönüş değeri | `-o output.txt` (`mask`) | Standart çıktı; `--force` üzerine yazmaya izin verir |
@@ -172,7 +179,8 @@ TCKN: *********26
 
 ```python
 find(text, types=None, *, custom_terms=()) -> list[Match]
-mask(text, style="tag", types=None, salt=None, *, custom_terms=()) -> str
+mask(text, style="tag", types=None, salt=None, *, custom_terms=(), seed=None) -> str
+stats(matches) -> {"total": int, "by_type": dict[str, int], "characters": int}
 ```
 
 `Match`, değiştirilemeyen bir dataclass'tır: `type: str`, `start: int`, `end: int`, `value: str`, `confidence: float`. Konumlar özgün Python metnindeki Unicode kod noktalarını sayar; `end` eşleşmeye dahil değildir. Sonuçlar başlangıç konumuna göre sıralıdır ve çakışmaz. Çakışmada önce güven puanı yüksek olan; eşitlikte daha uzun olan, daha önce başlayan ve tür adı alfabetik olarak önce gelen kazanır. Güven puanı sabit bir öncelik ölçüsüdür; ölçülmüş olasılık değildir.
@@ -190,6 +198,8 @@ mask(text, style="tag", types=None, salt=None, *, custom_terms=()) -> str
 | `PLATE` | `01`–`81` il kodu; 1 harf + 4 rakam, 2 harf + 3–4 rakam veya 3 harf + 2–3 rakam; bitişik/boşluklu. `validate_plate` |
 | `IP` | `ipaddress` ile doğrulanan IPv4/IPv6; bağlam etiketi gerekmez. `validate_ip` |
 | `POSTAL_CODE` | İlk iki hanesi `01`–`81` olan beş rakam; yalnız `posta kodu` veya `PK` sonrasında. `validate_postal_code` |
+| `PASSPORT` | Bir büyük harf + 7–8 rakam; yalnız `pasaport` / `passport` (isteğe bağlı `no`/`numarası`) sonrasında; herkese açık kontrol hanesi yoktur. `validate_passport` |
+| `MERSIS` | 16 rakam (boşluk/tire olabilir); yalnız `MERSİS` etiketinden sonra; herkese açık kontrol hanesi yoktur. `validate_mersis` |
 | `CUSTOM` | Yalnız kullanıcının verdiği terimler. `validate_custom_term(value, term)` |
 
 Doğrulayıcılar hem `tr_pii` üzerinden hem kendi modüllerinden (`tckn`, `vkn`, `iban`, `phone`, `email`, `credit_card`, `plate`, `ip`, `postal_code`, `custom`) kullanılabilir. `bool` döndürürler; telefon/posta kodu doğrulayıcıları tek başına verilen değeri inceler, algılama bağlamını aramaz. `validate_iban`, ayrıca genel IBAN biçimini, kayıtlı ülke uzunluğunu ve kontrol hanesini denetler; TR dışındaki ulusal BBAN kurallarını denetlemez. **Metinde otomatik IBAN algılama yalnız TR içindir.** `TYPES`, `Match` ve `Style` tür takma adı dışa açıktır. Paket `py.typed` içerir.
@@ -197,12 +207,27 @@ Doğrulayıcılar hem `tr_pii` üzerinden hem kendi modüllerinden (`tckn`, `vkn
 ## Sentetik test verisi
 
 ```python
-from tr_pii import fake, validate_tckn, validate_vkn, validate_tr_iban, validate_credit_card
+from tr_pii import (
+    fake,
+    validate_credit_card,
+    validate_mersis,
+    validate_passport,
+    validate_tckn,
+    validate_tr_iban,
+    validate_vkn,
+)
 
 assert validate_tckn(fake.tckn(seed=1))
 assert validate_vkn(fake.vkn(seed=1))
 assert validate_tr_iban(fake.tr_iban(seed=1))
 assert validate_credit_card(fake.credit_card(seed=1, length=19))
+assert validate_passport(fake.passport(seed=1))
+assert validate_mersis(fake.mersis(seed=1))
+
+# Gerçek gibi duran değerleri tutarlı ve tekrarlanabilir sentetik değerlerle değiştirin.
+from tr_pii import mask
+
+safe = mask(f"TCKN {fake.tckn(seed=1)}", style="fake", seed=42)
 ```
 
 **Yalnız test için.** Üreticiler geçerli kontrol haneleri oluşturur; kayıtlı kimlik veya kullanılabilir ödeme bilgisi sağlamaz. Üretilen değerler rezerve değildir ve atanmış numaralarla tesadüfen çakışabilir. Sahte TR IBAN'larında banka alanı `00000`, kartlarda varsayılan önek `999` olur. Aynı tohum (`seed`) aynı test verisini üretir. Bu değerleri gerçek servislere göndermeyin.

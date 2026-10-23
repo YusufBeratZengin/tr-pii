@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Detectors for `PASSPORT` (label-gated letter + 7-8 digits) and `MERSIS` (label-gated 16 digits) with `validate_passport` / `validate_mersis`, partial masking, and matching `fake.passport` / `fake.mersis` generators.
+- Masking styles `redact` (type-free `[REDACTED]`) and `fake` (checksum-valid synthetic stand-ins of the same type and layout; equal inputs give equal fakes). `mask(..., seed=)`, CLI `--fake` / `--seed` make output reproducible.
+- `stats()` plus CLI `scan --stats [--format json]` for per-type summaries, and `mask --format json` reporting original and masked offsets for every finding.
+- Tests for IBAN checksum rejection, plate province codes 01-81 and VKN checksum round trips.
 - Reproducible terminal SVG demo generated from real CLI commands with `scripts/make-demo.py`, embedded in both READMEs and checked in CI.
 - Default pytest line/branch coverage reporting with an 85% minimum, printed in every CI test job.
 - Weekly Dependabot updates for Python development dependencies and GitHub Actions, and a Python CodeQL workflow.
