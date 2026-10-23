@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest an improvement to offline detection or masking.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Please use synthetic examples only. Do not include personal data,
+        private documents, credentials, or private salts.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to accomplish, and what is missing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the API or CLI behavior, with synthetic input and expected output.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include workarounds or other approaches you have tried.
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Link to relevant official standards or public documentation, if applicable.

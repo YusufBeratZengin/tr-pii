@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="547"
+     viewBox="0 0 960 547" role="img" aria-labelledby="title description">
+  <title id="title">tr-pii: offline scanning and masking</title>
+  <desc id="description">Real CLI output using the synthetic examples/sample.txt fixture.
+    Counts, tag masking, stars and partial masking. Findings return exit code 3.</desc>
+  <rect width="960" height="547" rx="16" fill="#0d1117"/>
+  <path d="M16 0H944Q960 0 960 16V48H0V16Q0 0 16 0Z" fill="#1c2431"/>
+  <circle cx="28" cy="24" r="6" fill="#ff605c"/>
+  <circle cx="50" cy="24" r="6" fill="#ffbd44"/>
+  <circle cx="72" cy="24" r="6" fill="#00ca4e"/>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="16">
+    <text x="480" y="30" text-anchor="middle" fill="#b6c2d4">tr-pii · offline by default</text>
+    <text x="28" y="88" fill="#8ee6b0">$ python -m tr_pii --version</text>
+    <text x="28" y="113" fill="#d6deeb">0.1.0</text>
+    <text x="28" y="138" fill="#d6deeb"></text>
+    <text x="28" y="163" fill="#8ee6b0">$ python -m tr_pii scan examples/sample.txt --count --format json</text>
+    <text x="28" y="188" fill="#d6deeb">{&quot;count&quot;: 2}</text>
+    <text x="28" y="213" fill="#d6deeb"></text>
+    <text x="28" y="238" fill="#8ee6b0">$ python -m tr_pii mask examples/sample.txt</text>
+    <text x="28" y="263" fill="#d6deeb">E-posta: [EMAIL]</text>
+    <text x="28" y="288" fill="#d6deeb">TCKN: [TCKN]</text>
+    <text x="28" y="313" fill="#d6deeb"></text>
+    <text x="28" y="338" fill="#8ee6b0">$ python -m tr_pii mask examples/sample.txt --style stars</text>
+    <text x="28" y="363" fill="#d6deeb">E-posta: *********************</text>
+    <text x="28" y="388" fill="#d6deeb">TCKN: ***********</text>
+    <text x="28" y="413" fill="#d6deeb"></text>
+    <text x="28" y="438" fill="#8ee6b0">$ python -m tr_pii mask --style partial examples/sample.txt</text>
+    <text x="28" y="463" fill="#d6deeb">E-posta: *********************</text>
+    <text x="28" y="488" fill="#d6deeb">TCKN: *********26</text>
+    <text x="28" y="523" fill="#9baac0" font-size="14"
+      >Synthetic fixture · findings return exit code 3</text>
+  </g>
+</svg>

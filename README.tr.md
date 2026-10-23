@@ -4,12 +4,18 @@ tr-pii, Türkçe metindeki kişisel verileri bilgisayarınızda bulan ve maskele
 
 [![CI](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml)
 [![Lisans: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](pyproject.toml)
+[![PyPI sürümü](https://img.shields.io/pypi/v/tr-pii.svg)](https://pypi.org/project/tr-pii/)
 
 [English](README.md)
 
+![Terminal demosu: sentetik dosyadaki bulguları sayma, etiketle, yıldızla ve kısmen maskeleme](docs/demo.svg)
+
 ## Neden
 
-Bir LLM'e veya başka bir servise metin göndermeden önce kimlik bilgilerini kendi bilgisayarınızda temizleyin. Türkiye'ye özgü kontroller, TCKN, VKN ve TR IBAN'larını rastgele sayılardan ayırmaya yardımcı olur. Kütüphane ağ çağrısı yapmaz; telemetri ve hazır isim sözlüğü içermez.
+- **Türkiye'ye özgü doğrulama:** TCKN/VKN kontrol haneleri, sayısal TR IBAN sağlama toplamları, yerel telefon biçimleri ve bağlam gerektiren posta kodları yanlış eşleşmeleri azaltmaya yardımcı olur.
+- **Çevrimdışı çalışma:** ağ çağrısı, telemetri, indirilecek model veya çalışma zamanı bağımlılığı yoktur; bir LLM'e ya da servise göndermeden önce metni kendi bilgisayarınızda işleyin.
+- **Kütüphane ve komut satırı bir arada:** Unicode konumları, Türkçeye uygun özel terimler, dört maskeleme biçimi ve testleriniz için tekrarlanabilir sentetik veriler sunar.
 
 ```python
 from tr_pii import fake, mask
@@ -21,18 +27,23 @@ assert safe_text == "Test kaydı: TCKN [TCKN]; [EMAIL]"
 # Dış servise göndermeden önce safe_text içeriğini gözden geçirin.
 ```
 
-## Kurulum
+## Hızlı başlangıç
 
-Python 3.10 veya üzeri gerekir. Depoyu indirdikten sonra:
+Python 3.10 veya üzeri gerekir. Kaynak koddan kurulum için aşağıdaki komutları kullanın; PyPI sürümü henüz yayımlanmamış olsa da bu yöntem çalışır:
 
 ```sh
+git clone https://github.com/YusufBeratZengin/tr-pii.git
+cd tr-pii
 python -m pip install .
-tr-pii --version
+python -m tr_pii --version
+python -m tr_pii mask examples/sample.txt
 ```
+
+Maskeleme komutu ayrı satırlarda `E-posta: [EMAIL]` ve `TCKN: [TCKN]` yazar. Kimlik bilgisi bulduğu için `3` çıkış kodunu döndürür; bu kod işlemin başarıyla tamamlandığını ve bulgu içerdiğini gösterir.
 
 Paket Hatchling ile derlenir. Kurulan kütüphane yalnız Python standart kütüphanesini kullanır. Kurulum sırasında derleme aracı için internet gerekebilir; metin işlenirken ağ bağlantısı kullanılmaz.
 
-## Hızlı başlangıç
+## Kullanım örnekleri
 
 ```python
 from tr_pii import find, mask
@@ -76,6 +87,21 @@ tr-pii mask input.txt --terms-file test-terms.txt
 
 `--style hash` için tuzu yerel ortamınızdan veya sır yöneticinizden `TR_PII_SALT` ortam değişkenine verin. Tuzun komut satırı geçmişine girmemesi için ayrı bir komut satırı seçeneği yoktur. Gerçek tuzu örneklere veya commit'lenen dosyalara yazmayın.
 
+## Yapılandırma
+
+Ayrı bir yapılandırma dosyası yoktur. Seçenekleri API'ye veya komut satırına verin:
+
+| Ayar | Python API | Komut satırı | Varsayılan |
+| --- | --- | --- | --- |
+| Etkin algılayıcılar | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | Bütün türler |
+| Maskeleme biçimi | `style="tag"` | `--style tag` | `tag`; diğerleri: `stars`, `partial`, `hash` |
+| Özel sözlük | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Boş; UTF-8 dosyada satır başına bir terim |
+| Hash tuzu | `salt=...` | `TR_PII_SALT` ortam değişkeni | Tanımsız; `hash` için zorunlu |
+| Çıktı hedefi | Dönüş değeri | `-o output.txt` (`mask`) | Standart çıktı; `--force` üzerine yazmaya izin verir |
+| Bulgu sayısı | `len(find(text))` | `--count`, isteğe bağlı `--format json` (`scan`) | Bütün bulgular JSON satırları olarak yazılır |
+
+### Çıkış kodları
+
 | Çıkış kodu | Anlamı |
 | --- | --- |
 | `0` | Bulgu yok |
@@ -91,6 +117,15 @@ tr-pii mask input.txt --terms-file test-terms.txt
 ```text
 E-posta: dummy@example.invalid
 TCKN: 29141777626
+```
+
+### Etiket ve yıldızla maskeleme
+
+Yukarıdaki terminal görseli, aşağıdaki sayım ve kısmi maskeleme örnekleriyle birlikte bu komutların gerçek çıktısından üretilir:
+
+```sh
+python -m tr_pii mask examples/sample.txt
+python -m tr_pii mask examples/sample.txt --style stars
 ```
 
 ### Bulgu tarama (scan)
@@ -114,14 +149,14 @@ Yalnızca bulgu sayısı özeti:
 tr-pii scan examples/sample.txt --count
 # 2 (çıkış kodu: 3)
 
-tr-pii scan examples/sample.txt --count --format json
+python -m tr_pii scan examples/sample.txt --count --format json
 # {"count": 2} (çıkış kodu: 3)
 ```
 
 ### Kısmi maskeleme (partial mask)
 
 ```sh
-tr-pii mask --style partial examples/sample.txt
+python -m tr_pii mask --style partial examples/sample.txt
 ```
 
 Çıktı:
@@ -172,7 +207,21 @@ assert validate_credit_card(fake.credit_card(seed=1, length=19))
 
 **Yalnız test için.** Üreticiler geçerli kontrol haneleri oluşturur; kayıtlı kimlik veya kullanılabilir ödeme bilgisi sağlamaz. Üretilen değerler rezerve değildir ve atanmış numaralarla tesadüfen çakışabilir. Sahte TR IBAN'larında banka alanı `00000`, kartlarda varsayılan önek `999` olur. Aynı tohum (`seed`) aynı test verisini üretir. Bu değerleri gerçek servislere göndermeyin.
 
-## Sınırlar ve uyarılar
+## Sık sorulan sorular ve sınırlar
+
+### İşlem sırasında internet bağlantısı gerekir mi?
+
+Hayır. Algılama, maskeleme ve sentetik veri üretimi standart kütüphaneyle yerel olarak çalışır. Paket kurulurken derleme araçlarının indirilmesi gerekebilir.
+
+### Başarılı bir komut neden 3 çıkış kodunu döndürür?
+
+Bu kod, maskeleme başarıyla tamamlansa bile bulgu olduğunu belirtir. İşlemin başarısını denetlerken hem `0` hem `3` kodunu kabul edin; metni paylaşmadan önce bulgu kontrolü yapıyorsanız `3` kodunu engelleme koşulu olarak kullanın.
+
+### İsimler ve adresler otomatik bulunur mu?
+
+İsimler için `custom_terms` ile açıkça bir sözlük vermeniz gerekir. Genel adres algılama kapsam dışındadır.
+
+### Sınırlar
 
 - Algılama %100 garanti değildir. Hassas metni paylaşmadan önce sonucu gözden geçirin. Bu kütüphane tek başına mevzuata uyum veya geri döndürülemez anonimleştirme sağlamaz.
 - İsimler için kendi sözlüğünüz gerekir. Adresler, sözlük dışı isimler, OCR hataları, gizlenmiş yazımlar, yazıyla belirtilen sayılar ve Unicode rakam benzerleri kapsam dışıdır. Konumları korumak için Unicode normalleştirmesi yapılmaz.
@@ -184,16 +233,20 @@ assert validate_credit_card(fake.credit_card(seed=1, length=19))
 - `scan` ham değerleri döndürür. Kısmi maskeleme bazı rakamları bilerek açık bırakır; tuzlu hash, değerler arasındaki ilişkileri korur. Bu bilgi açığa çıkmamalıysa `tag` veya `stars` kullanın.
 - Dosyalar bütün olarak belleğe alınır. Hedef, tipik bir geliştirme bilgisayarında 1 MB metni bir saniyenin altında işlemektir; donanım, bulgu yoğunluğu ve büyük özel sözlükler süreyi etkiler. Bu bir hedef olup gecikme garantisi değildir.
 
-## Geliştirme ve katkı
+## Katkıda bulunma
 
 ```sh
 python -m pip install -e '.[dev]'
 python -m pytest
 python -m ruff check .
+python -m ruff format --check .
 python -m mypy
 python -m build
 python scripts/benchmark.py
+python scripts/make-demo.py --check
 ```
+
+`python -m pytest`, modül başına satır ve dal kapsamını gösterir; birleşik kapsam %85'in altındaysa başarısız olur. CLI veya örnek dosya değiştiğinde terminal görselini `python scripts/make-demo.py` ile yeniden üretin. `--check`, dosyayı değiştirmeden güncelliğini denetler.
 
 Geliştirme paketleri olmadan da depo içinden standart kütüphaneyle test çalıştırılabilir:
 
@@ -202,7 +255,7 @@ PYTHONPATH=src python -m unittest discover -v
 PYTHONPATH=src python scripts/benchmark.py
 ```
 
-PowerShell'de Python komutlarından önce `$env:PYTHONPATH = "src"` ayarlayın. CI, Python 3.10–3.14 üzerinde test, lint, sıkı tür denetimi ve paket derlemesi çalıştırır. Testler kontrol haneli veriyi üretir; ayrılmış e-posta/IP örnekleri kullanır. Katkı süreci için [CONTRIBUTING.md](CONTRIBUTING.md), değişiklikler için [CHANGELOG.md](CHANGELOG.md) dosyasına bakın.
+PowerShell'de Python komutlarından önce `$env:PYTHONPATH = "src"` ayarlayın. CI; Ubuntu'da Python 3.10–3.14, Windows ve macOS'ta Python 3.10 ve 3.14 ile kapsam raporlu test, lint, sıkı tür denetimi ve paket derlemesi çalıştırır. Dependabot, geliştirme paketlerini ve GitHub Actions bağımlılıklarını haftalık denetler. CodeQL; push, pull request ve haftalık zamanlama ile Python kodunu analiz eder. Testler kontrol haneli veriyi üretir; ayrılmış e-posta/IP örnekleri kullanır. Katkı süreci için [CONTRIBUTING.md](CONTRIBUTING.md), değişiklikler için [CHANGELOG.md](CHANGELOG.md) dosyasına bakın.
 
 ## Teknik kaynaklar
 

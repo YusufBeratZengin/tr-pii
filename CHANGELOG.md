@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Reproducible terminal SVG demo generated from real CLI commands with `scripts/make-demo.py`, embedded in both READMEs and checked in CI.
+- Default pytest line/branch coverage reporting with an 85% minimum, printed in every CI test job.
+- Weekly Dependabot updates for Python development dependencies and GitHub Actions, and a Python CodeQL workflow.
+- YAML issue forms for bug reports and feature requests, with synthetic-data guidance.
+- macOS CI on Python 3.10 and 3.14, alongside the existing Ubuntu and Windows checks.
+- Python and PyPI version badges, synchronized quick starts, configuration tables and FAQs in English and Turkish.
 - CLI: `--output` / `-o FILE` option for `mask` command, writing masked text to file and refusing overwrite unless `--force` is specified.
 - CLI: `--count` flag for `scan` command with `--format text` (default) and `--format json` summary output, preserving exit code `3` on findings.
 - Release workflow: added `.github/workflows/release.yml` for PyPI trusted publishing (OIDC) and GitHub releases triggered on `v*` tags.
@@ -30,7 +36,7 @@ All notable changes to this project are documented here. The format follows
 - Repository hygiene: removed stray untracked directory `tmplqnfcris/`.
 - Plate detection no longer matches lowercase or mixed-case spaced text such as `42 at 100`; spaced plates need uppercase letters, lowercase is accepted only in compact form.
 
-## [0.1.0] - 2026-10-22
+## [0.1.0] - 2026-10-23
 
 ### Added
 

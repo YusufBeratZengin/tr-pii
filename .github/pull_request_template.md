@@ -13,10 +13,12 @@ Brief summary of changes made and motivation behind them.
 ## Verification and Checks
 
 Commands run and test results:
-- [ ] `python -m pytest` passes locally
+
+- [ ] `python -m pytest` passes locally with at least 85% coverage
 - [ ] `python -m ruff check .` passes
 - [ ] `python -m ruff format --check .` passes
 - [ ] `python -m mypy` passes with strict typing
+- [ ] `python scripts/make-demo.py --check` matches the current CLI output
 - [ ] `python -m build && python -m twine check dist/*` passes
 - [ ] `python scripts/benchmark.py` passes
 

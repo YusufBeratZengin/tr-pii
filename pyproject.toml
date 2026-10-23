@@ -43,7 +43,14 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "ruff>=0.11,<1", "mypy>=1.15,<2", "build>=1.2,<2", "twine>=5,<8"]
+dev = [
+  "pytest>=8,<10",
+  "pytest-cov>=6,<8",
+  "ruff>=0.11,<1",
+  "mypy>=1.15,<2",
+  "build>=1.2,<2",
+  "twine>=5,<8",
+]
 
 [project.urls]
 Homepage = "https://github.com/YusufBeratZengin/tr-pii"
@@ -58,12 +65,12 @@ tr-pii = "tr_pii.cli:run"
 packages = ["src/tr_pii"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/scripts", "/examples", "/*.md", "/LICENSE", "/pyproject.toml"]
+include = ["/src", "/tests", "/scripts", "/examples", "/docs", "/*.md", "/LICENSE", "/pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-ra"
+addopts = "-ra --cov=tr_pii --cov-branch --cov-report=term-missing --cov-fail-under=85"
 
 [tool.ruff]
 target-version = "py310"
@@ -76,5 +83,5 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
-files = ["src", "tests", "scripts/benchmark.py"]
+files = ["src", "tests", "scripts"]
 mypy_path = "src"

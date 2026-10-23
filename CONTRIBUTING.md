@@ -12,11 +12,19 @@ python -m venv .venv
 python -m pip install -e '.[dev]'
 python -m pytest
 python -m ruff check .
+python -m ruff format --check .
 python -m mypy
 python -m build
+python scripts/make-demo.py --check
 ```
 
 If development packages cannot be installed, run `python -m unittest discover -v` with `PYTHONPATH=src` and report which additional checks could not run. Do not claim an unavailable check passed. In PowerShell use `$env:PYTHONPATH = "src"`.
+
+The default pytest command prints line and branch coverage and enforces an 85% combined minimum. CI runs it on Ubuntu with Python 3.10–3.14, and on Windows and macOS with Python 3.10 and 3.14.
+
+## README terminal demo
+
+Run `python scripts/make-demo.py` after changing CLI output or `examples/sample.txt`. The standard-library generator runs the real CLI, checks its exit codes, and writes `docs/demo.svg`. Both READMEs use this image; CI checks it with `python scripts/make-demo.py --check`. Keep all demo commands in both READMEs and use synthetic fixtures only.
 
 ## Tests and privacy
 

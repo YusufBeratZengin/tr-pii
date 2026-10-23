@@ -4,12 +4,18 @@ tr-pii detects and masks personal data in Turkish text locally, using a Python l
 
 [![CI](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/tr-pii/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](pyproject.toml)
+[![PyPI version](https://img.shields.io/pypi/v/tr-pii.svg)](https://pypi.org/project/tr-pii/)
 
 [Türkçe](README.tr.md)
 
+![Terminal demo: count findings and mask a synthetic fixture with tags, stars and partial masking](docs/demo.svg)
+
 ## Why
 
-Before sending text to an LLM or another service, remove identifiers on your own machine. Turkey-specific checks help distinguish a TCKN, VKN or TR IBAN from arbitrary digits. The library makes no network calls and includes no telemetry or bundled name list.
+- **Turkey-specific validation:** TCKN/VKN check digits, numeric TR IBAN checksums, local phone formats and contextual postal codes help reduce false positives.
+- **Offline by default:** no network calls, telemetry, models to download or runtime dependencies; process text locally before sharing it with an LLM or service.
+- **One library, one CLI:** Unicode offsets, Turkish-aware custom terms and four masking styles, with reproducible synthetic fixtures for your tests.
 
 ```python
 from tr_pii import fake, mask
@@ -21,18 +27,23 @@ assert safe_text == "Test kaydı: TCKN [TCKN]; [EMAIL]"
 # Review safe_text before sending it to an external service.
 ```
 
-## Installation
+## Quick start
 
-Python 3.10 or newer. From a checkout:
+Python 3.10 or newer. Install from source; these commands also work before a PyPI release is available:
 
 ```sh
+git clone https://github.com/YusufBeratZengin/tr-pii.git
+cd tr-pii
 python -m pip install .
-tr-pii --version
+python -m tr_pii --version
+python -m tr_pii mask examples/sample.txt
 ```
+
+The masking command prints `E-posta: [EMAIL]` and `TCKN: [TCKN]` on separate lines and exits with `3` because it found identifiers. This is successful processing, not an error.
 
 Building uses Hatchling. The installed library uses only the Python standard library. Installation may need internet access for the build backend; processing text never does.
 
-## Quick start
+## Usage examples
 
 ```python
 from tr_pii import find, mask
@@ -76,6 +87,21 @@ tr-pii mask input.txt --terms-file test-terms.txt
 
 For `--style hash`, supply the salt in the `TR_PII_SALT` environment variable through your local environment or secret manager. The CLI deliberately has no salt command-line option. Do not store a real salt in examples or committed files.
 
+## Configuration
+
+There is no configuration file. Pass options to the API or CLI:
+
+| Setting | Python API | CLI | Default |
+| --- | --- | --- | --- |
+| Enabled detectors | `types=["EMAIL", "TCKN"]` | `--types EMAIL,TCKN` | All types |
+| Masking style | `style="tag"` | `--style tag` | `tag`; also `stars`, `partial`, `hash` |
+| Custom dictionary | `custom_terms=["demo term"]` | `--terms-file test-terms.txt` | Empty; one UTF-8 term per line |
+| Hash salt | `salt=...` | `TR_PII_SALT` environment variable | Unset; required for `hash` |
+| Output destination | Return value | `-o output.txt` (`mask`) | Standard output; `--force` permits overwrite |
+| Count summary | `len(find(text))` | `--count`, optionally `--format json` (`scan`) | JSON Lines with full findings |
+
+### Exit codes
+
 | Exit code | Meaning |
 | --- | --- |
 | `0` | No findings |
@@ -91,6 +117,15 @@ Given synthetic input in `examples/sample.txt` (using reserved `.invalid` domain
 ```text
 E-posta: dummy@example.invalid
 TCKN: 29141777626
+```
+
+### Tags and stars
+
+The terminal demo above captures these commands directly, along with the count and partial-mask examples below:
+
+```sh
+python -m tr_pii mask examples/sample.txt
+python -m tr_pii mask examples/sample.txt --style stars
 ```
 
 ### Scan findings
@@ -114,14 +149,14 @@ Summary count only:
 tr-pii scan examples/sample.txt --count
 # 2 (exit status: 3)
 
-tr-pii scan examples/sample.txt --count --format json
+python -m tr_pii scan examples/sample.txt --count --format json
 # {"count": 2} (exit status: 3)
 ```
 
 ### Partial masking
 
 ```sh
-tr-pii mask --style partial examples/sample.txt
+python -m tr_pii mask --style partial examples/sample.txt
 ```
 
 Output:
@@ -172,7 +207,21 @@ assert validate_credit_card(fake.credit_card(seed=1, length=19))
 
 **For tests only.** These generators produce valid check digits, not registered identities or usable payment credentials. Generated values are not reserved and can accidentally coincide with assigned identifiers. Fake TR IBANs use a `00000` demo bank field; cards default to prefix `999`. Seeds make fixtures reproducible. Do not submit generated values to real services.
 
-## Limits and cautions
+## FAQ and limitations
+
+### Does processing require internet access?
+
+No. Detection, masking and synthetic-data generation run locally using the standard library. Package installation may download build tools.
+
+### Why does a successful command exit with 3?
+
+It signals that findings were detected, including when masking succeeds. Handle both `0` and `3` as successful processing; use `3` as a gate when checking text before sharing.
+
+### Does it find names and addresses automatically?
+
+Names require an explicit `custom_terms` dictionary. General address detection is outside scope.
+
+### Limitations
 
 - There is no 100% detection guarantee. Review results before sharing sensitive text. This library alone does not establish regulatory compliance or irreversible anonymization.
 - Names need your dictionary. Addresses, unlisted names, OCR errors, obfuscated text, spelled-out digits and Unicode digit lookalikes are outside scope. Unicode normalization is not performed, preserving offsets.
@@ -184,16 +233,20 @@ assert validate_credit_card(fake.credit_card(seed=1, length=19))
 - `scan` returns raw values. Partial masking intentionally reveals digits; salted hashing retains relationships. Use `tag` or `stars` when this leakage is unsuitable.
 - Files are processed in memory as a whole. The target is under one second for 1 MB on a typical development machine; hardware, finding density and large custom dictionaries affect runtime. This is a target, not a latency guarantee.
 
-## Development and contributing
+## Contributing
 
 ```sh
 python -m pip install -e '.[dev]'
 python -m pytest
 python -m ruff check .
+python -m ruff format --check .
 python -m mypy
 python -m build
 python scripts/benchmark.py
+python scripts/make-demo.py --check
 ```
+
+`python -m pytest` prints per-module line and branch coverage and fails below 85% combined coverage. Regenerate the terminal image with `python scripts/make-demo.py` after changing the CLI or sample fixture; `--check` verifies it without rewriting the image.
 
 Without development packages, tests also run with the standard library from a checkout:
 
@@ -202,7 +255,7 @@ PYTHONPATH=src python -m unittest discover -v
 PYTHONPATH=src python scripts/benchmark.py
 ```
 
-PowerShell: set `$env:PYTHONPATH = "src"` before running the Python commands. CI runs tests, lint, strict type checks and package builds on Python 3.10–3.14. Tests generate checksum fixtures and use reserved email/IP examples. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process and [CHANGELOG.md](CHANGELOG.md) for changes.
+PowerShell: set `$env:PYTHONPATH = "src"` before running the Python commands. CI runs tests with coverage, lint, strict type checks and package builds on Ubuntu (Python 3.10–3.14), Windows and macOS (Python 3.10 and 3.14). Weekly Dependabot updates cover development packages and GitHub Actions; CodeQL analyzes Python on pushes, pull requests and a weekly schedule. Tests generate checksum fixtures and use reserved email/IP examples. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process and [CHANGELOG.md](CHANGELOG.md) for changes.
 
 ## Technical references
 
